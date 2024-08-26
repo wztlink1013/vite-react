@@ -67,6 +67,12 @@ function App() {
           </Suspense>
           )}
       </div>
+      <div>iframe</div>
+      <iframe src="/about.html" style={{
+        border: '1px solid cyan',
+        margin: 0,
+        padding: 0,
+      }} />
     </Profiler>
   )
 }
