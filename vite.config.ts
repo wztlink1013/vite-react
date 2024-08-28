@@ -9,12 +9,8 @@ import path from 'path';
 import fs from 'fs';
 // import { resolve } from 'path';
 
-interface PluginOptions {
-  app_version: string;
-}
-
-const versionUpdatePlugin = (options: PluginOptions): Plugin => {
-  const { app_version } = options;
+const versionUpdatePlugin = (options: { version: string }): Plugin => {
+  const { version } = options;
   let config: { publicDir: string };
   const writeVersion = (versionFile: string, content: string) => {
     fs.writeFile(versionFile, content, (err: any) => {
@@ -22,14 +18,58 @@ const versionUpdatePlugin = (options: PluginOptions): Plugin => {
     });
   };
   return {
-    name: 'vite-plugin-react-version-update',
+    name: 'vite-plugin-react-manifest-update',
     configResolved(resolvedConfig: any) {
       // 存储最终解析的配置
       config = resolvedConfig;
     },
     buildStart() {
-      const file = `${config.publicDir}${path.sep}version.json`;
-      const content = JSON.stringify({ app_version });
+      const file = `${config.publicDir}${path.sep}manifest.json`;
+      const content = JSON.stringify({
+        ...{
+          name: 'vite-react-typescript-starter',
+          origin: 'https://www.baidu.com',
+          scope: '/',
+          short_name: 'vite-react-typescript-starter',
+          start_url: '/login',
+          theme_color: '#ffffff',
+          display: 'standalone',
+          background_color: '#ffffff',
+          icons: [
+            {
+              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_32.png',
+              sizes: '32x32',
+              type: 'image/png',
+            },
+            {
+              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_64.png',
+              sizes: '64x64',
+              type: 'image/png',
+            },
+            {
+              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_128.png',
+              sizes: '128x128',
+              type: 'image/png',
+            },
+            {
+              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_256.png',
+              sizes: '256x256',
+              type: 'image/png',
+            },
+            {
+              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_512.png',
+              sizes: '512x512',
+              type: 'image/png',
+            },
+            {
+              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_1024.png',
+              sizes: '1024x1024',
+              type: 'image/png',
+            },
+          ],
+        },
+        version,
+      });
 
       if (fs.existsSync(config.publicDir)) {
         writeVersion(file, content);
@@ -48,7 +88,15 @@ const versionUpdatePlugin = (options: PluginOptions): Plugin => {
             tag: 'meta',
             injectTo: 'head-prepend',
             attrs: {
-              app_version,
+              version,
+            },
+          },
+          {
+            tag: 'link',
+            injectTo: 'head-prepend',
+            attrs: {
+              rel: 'manifest',
+              href: '/manifest.json',
             },
           },
         ];
@@ -64,11 +112,16 @@ export default defineConfig(() => {
     plugins: [
       react(),
       versionUpdatePlugin({
-        app_version: __APP_VERSION__,
+        version: __APP_VERSION__,
       }),
     ],
     define: {
       __APP_VERSION__,
     },
+    build: {
+      sourcemap: true,
+      // manifest: true,
+      emptyOutDir: true,
+    }
   };
 });
