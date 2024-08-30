@@ -1,5 +1,7 @@
 import React, { Profiler, Suspense, useCallback, useMemo, useState } from 'react'
 import { flushSync } from 'react-dom';
+import { Nav } from './components/nav';
+import { TextEditor } from './components/textEditor';
 
 const onRenderCallback = (
   id: string,
@@ -53,7 +55,8 @@ function App() {
     })
   }
   return (
-    <Profiler id="App" onRender={onRenderCallback}>
+    <>
+    {/* <Profiler id="App" onRender={onRenderCallback}>
       <div style={{
         marginTop: '200px',
         textAlign: 'right'
@@ -67,7 +70,14 @@ function App() {
           </Suspense>
           )}
       </div>
-    </Profiler>
+    </Profiler> */}
+      <div className="App">
+        <div className="editor-wrapper">
+          <Nav />
+          <TextEditor />
+        </div>
+      </div>
+    </>
   )
 }
 
