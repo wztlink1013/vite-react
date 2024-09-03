@@ -1,3 +1,10 @@
+<!--
+ * @Description: 
+ * @Author: wzt
+ * @Date: 2024-09-03 09:48:43
+ * @LastEditors: wzt
+ * @LastEditTime: 2024-09-03 09:57:20
+-->
 <!doctype html>
 <html lang="en">
   <head>
@@ -8,5 +15,46 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function () {
+        // 检查浏览器是否支持 Service Worker
+        if ('serviceWorker' in navigator) {
+          const SW_DISABLED_KEY = 'wolai_sw_disabled';
+    
+          // 根据 URL 参数来设置或清除本地存储的 Service Worker 状态
+          if (/sw=disable/.test(window.location.search)) {
+            localStorage.setItem(SW_DISABLED_KEY, 'true');
+          } else if (/sw=enable/.test(window.location.search)) {
+            localStorage.removeItem(SW_DISABLED_KEY);
+          }
+    
+          // 判断是否需要禁用 Service Worker
+          const isSWDisabled = localStorage.getItem(SW_DISABLED_KEY) === 'true';
+    
+          if (!isSWDisabled) {
+            // 如果未禁用，注册 Service Worker
+            navigator.serviceWorker.register('sw.js')
+              .then(() => {
+                console.log('Service Worker registered successfully');
+              })
+              .catch((error) => {
+                console.error('Service Worker registration failed: ', error);
+              });
+          } else {
+            // 如果禁用，注销现有的 Service Worker
+            navigator.serviceWorker.getRegistration()
+              .then((registration) => {
+                if (registration) {
+                  registration.unregister();
+                  console.log('Service Worker unregistered successfully');
+                }
+              })
+              .catch((error) => {
+                console.error('Service Worker unregistration failed: ', error);
+              });
+          }
+        }
+      })();
+    </script>
   </body>
 </html>
