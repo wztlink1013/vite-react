@@ -1,12 +1,60 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>r</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>r</title>
+  <link rel="stylesheet" href="https://cdn.wostatic.cn/dist/lib/bootstrap/4.4.1/css/bootstrap.min.css" />
+</head>
+
+<body>
+  <div id="root"></div>
+  <img src="https://www.wztlink1013.com/public/img/avatar.png" style="width: 50px;height: 50px" />
+  <script type="module" src="/src/main.tsx"></script>
+  <script>
+    (function () {
+      // 检查浏览器是否支持 Service Worker
+      if ('serviceWorker' in navigator) {
+        const SW_DISABLED_KEY = 'wolai_sw_disabled';
+
+        // 根据 URL 参数来设置或清除本地存储的 Service Worker 状态
+        if (/sw=disable/.test(window.location.search)) {
+          localStorage.setItem(SW_DISABLED_KEY, 'true');
+        } else if (/sw=enable/.test(window.location.search)) {
+          localStorage.removeItem(SW_DISABLED_KEY);
+        }
+
+        // 判断是否需要禁用 Service Worker
+        const isSWDisabled = localStorage.getItem(SW_DISABLED_KEY) === 'true';
+
+        if (!isSWDisabled) {
+          // 如果未禁用，注册 Service Worker
+          navigator.serviceWorker
+            .register('sw.js')
+            .then(() => {
+              console.log('Service Worker registered successfully');
+            })
+            .catch((error) => {
+              console.error('Service Worker registration failed: ', error);
+            });
+        } else {
+          // 如果禁用，注销现有的 Service Worker
+          navigator.serviceWorker
+            .getRegistration()
+            .then((registration) => {
+              if (registration) {
+                registration.unregister();
+                console.log('Service Worker unregistered successfully');
+              }
+            })
+            .catch((error) => {
+              console.error('Service Worker unregistration failed: ', error);
+            });
+        }
+      }
+    })();
+  </script>
+</body>
+
 </html>

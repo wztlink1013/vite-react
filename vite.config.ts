@@ -8,9 +8,13 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import fs from 'fs';
 // import { resolve } from 'path';
+import customManifestPlugin from './customManifestPlugin';
 
-const versionUpdatePlugin = (options: { version: string }): Plugin => {
-  const { version } = options;
+const versionUpdatePlugin = (options: {
+  version: string;
+  date: any;
+}): Plugin => {
+  const { version, date } = options;
   let config: { publicDir: string };
   const writeVersion = (versionFile: string, content: string) => {
     fs.writeFile(versionFile, content, (err: any) => {
@@ -67,7 +71,16 @@ const versionUpdatePlugin = (options: { version: string }): Plugin => {
               type: 'image/png',
             },
           ],
+          files: [
+            {
+              path: 'https://cdn.wostatic.cn/dist/lib/bootstrap/4.4.1/css/bootstrap.min.css',
+            },
+            {
+              path: 'https://www.wztlink1013.com/public/img/avatar.png',
+            }
+          ],
         },
+        date,
         version,
       });
 
@@ -107,13 +120,16 @@ const versionUpdatePlugin = (options: { version: string }): Plugin => {
 
 // https://vitejs.dev/config/
 export default defineConfig(() => {
-  const __APP_VERSION__ = String(new Date().getTime());
+  const date = new Date();
+  const __APP_VERSION__ = String(date.getTime());
   return {
     plugins: [
       react(),
       versionUpdatePlugin({
         version: __APP_VERSION__,
+        date,
       }),
+      customManifestPlugin(),
     ],
     define: {
       __APP_VERSION__,
@@ -122,6 +138,9 @@ export default defineConfig(() => {
       sourcemap: true,
       // manifest: true,
       emptyOutDir: true,
-    }
+    },
+    // worker: {
+    //   format: 'iife',
+    // },
   };
 });
