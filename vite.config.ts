@@ -1,21 +1,16 @@
-import {
-  defineConfig,
-  // IndexHtmlTransform,
-  Plugin,
-} from 'vite';
+import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-// import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import fs from 'fs';
-// import { resolve } from 'path';
-import customManifestPlugin from './customManifestPlugin';
+// import customManifestPlugin from './customManifestPlugin';
 
 const versionUpdatePlugin = (options: {
   version: string;
   date: any;
 }): Plugin => {
   const { version, date } = options;
-  let config: { publicDir: string };
+  let config: { publicDir: string, outDir: string };
+  // @ts-ignore
   const writeVersion = (versionFile: string, content: string) => {
     fs.writeFile(versionFile, content, (err: any) => {
       if (err) throw err;
@@ -24,74 +19,7 @@ const versionUpdatePlugin = (options: {
   return {
     name: 'vite-plugin-react-manifest-update',
     configResolved(resolvedConfig: any) {
-      // 存储最终解析的配置
       config = resolvedConfig;
-    },
-    buildStart() {
-      const file = `${config.publicDir}${path.sep}manifest.json`;
-      const content = JSON.stringify({
-        ...{
-          name: 'vite-react-typescript-starter',
-          origin: 'https://www.wztlink1013.com',
-          scope: '/',
-          short_name: 'vite-react-typescript-starter',
-          start_url: '/login',
-          theme_color: '#ffffff',
-          display: 'standalone',
-          background_color: '#ffffff',
-          icons: [
-            {
-              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_32.png',
-              sizes: '32x32',
-              type: 'image/png',
-            },
-            {
-              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_64.png',
-              sizes: '64x64',
-              type: 'image/png',
-            },
-            {
-              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_128.png',
-              sizes: '128x128',
-              type: 'image/png',
-            },
-            {
-              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_256.png',
-              sizes: '256x256',
-              type: 'image/png',
-            },
-            {
-              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
-            {
-              src: 'https://cdn.wostatic.cn/dist/icons/app_icon_pwa_1024.png',
-              sizes: '1024x1024',
-              type: 'image/png',
-            },
-          ],
-          files: [
-            {
-              path: 'https://cdn.wostatic.cn/dist/lib/bootstrap/4.4.1/css/bootstrap.min.css',
-            },
-            {
-              path: 'https://www.wztlink1013.com/public/img/avatar.png',
-            }
-          ],
-        },
-        date,
-        version,
-      });
-
-      if (fs.existsSync(config.publicDir)) {
-        writeVersion(file, content);
-      } else {
-        fs.mkdir(config.publicDir, (err: any) => {
-          if (err) throw err;
-          writeVersion(file, content);
-        });
-      }
     },
     transformIndexHtml: {
       order: 'pre',
@@ -115,6 +43,44 @@ const versionUpdatePlugin = (options: {
         ];
       },
     },
+    // @ts-ignore
+    generateBundle(outputOptions, bundle) {
+      const files = [];
+
+      for (const fileName in bundle) {
+        const path = `http://localhost:4173/${fileName}`;
+        files.push({ path });
+      }
+
+      const publicFile = `${config.publicDir}${path.sep}manifest.json`;
+      const distFile = `${config.outDir || 'dist'}${path.sep}manifest.json`;
+      const content = JSON.stringify({
+        ...{
+          name: 'vite-react-typescript-starter',
+          origin: 'https://www.wztlink1013.com',
+          scope: '/',
+          short_name: 'vite-react-typescript-starter',
+          start_url: '/login',
+          theme_color: '#ffffff',
+          display: 'standalone',
+          background_color: '#ffffff',
+          files,
+        },
+        date,
+        version,
+      });
+
+      if (fs.existsSync(config.publicDir)) {
+        writeVersion(publicFile, content);
+        writeVersion(distFile, content);
+      } else {
+        fs.mkdir(config.publicDir, (err: any) => {
+          if (err) throw err;
+          writeVersion(publicFile, content);
+          writeVersion(distFile, content);
+        });
+      }
+    },
   };
 };
 
@@ -129,18 +95,22 @@ export default defineConfig(() => {
         version: __APP_VERSION__,
         date,
       }),
-      customManifestPlugin(),
+      // customManifestPlugin(),
     ],
     define: {
       __APP_VERSION__,
     },
     build: {
-      sourcemap: true,
-      // manifest: true,
+      sourcemap: false,
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          entryFileNames: () => `js/[name].[hash].js`,
+          chunkFileNames: () => `js/[name].[hash].js`,
+          assetFileNames: (assetInfo) =>
+            `${/\.(css)$/.test(assetInfo.name ?? '') ? 'css' : 'assets'}/[name].[hash].[ext]`,
+        },
+      },
     },
-    // worker: {
-    //   format: 'iife',
-    // },
   };
 });
