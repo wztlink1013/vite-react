@@ -32,7 +32,7 @@ const versionUpdatePlugin = (options: {
       const content = JSON.stringify({
         ...{
           name: 'vite-react-typescript-starter',
-          origin: 'https://www.baidu.com',
+          origin: 'https://www.wztlink1013.com',
           scope: '/',
           short_name: 'vite-react-typescript-starter',
           start_url: '/login',
