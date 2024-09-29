@@ -1,74 +1,103 @@
-import React, { Profiler, Suspense, useCallback, useMemo, useState } from 'react'
-import { flushSync } from 'react-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import './App.css';
+import { Input } from 'antd';
 
-const onRenderCallback = (
-  id: string,
-  phase: string,
-  actualDuration: number,
-  baseDuration: number,
-  startTime: number,
-  commitTime: number,
-) => {
-  console.log({ id, phase, actualDuration, baseDuration, startTime, commitTime });
+const { TextArea } = Input;
+
+const App: React.FC = () => {
+  const [value, setValue] = useState('');
+  const [lineCount, setLineCount] = useState(1);
+  const [isAboutToWrap, setIsAboutToWrap] = useState(false);
+  const textAreaRef = useRef(null);
+  const [lineChangeStatus, setLineChangeStatus] = useState('');
+
+  const handleChange = (e: any) => setValue(e.target.value);
+
+  // useLayoutEffect(() => {
+  //   // @ts-ignore
+  //   const textAreaElement = textAreaRef.current?.resizableTextArea?.textArea;
+  //   if (textAreaElement) {
+  //     const lineHeight = parseInt(
+  //       window.getComputedStyle(textAreaElement).lineHeight,
+  //       10
+  //     );
+  //     const currentLineCount =
+  //       Math.floor(textAreaElement.scrollHeight / lineHeight) || 1;
+  //     setLineCount(currentLineCount);
+  //     const aboutToWrap = textAreaElement.scrollHeight > textAreaElement.clientHeight;
+  //     setIsAboutToWrap(aboutToWrap);
+  //   }
+  // }, [value]);
+  const [contentWidth, setContentWidth] = useState(0);
+  const calculateContentWidth = (text: any) => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    // @ts-ignore
+    context.font = window.getComputedStyle(textAreaRef.current).font; // 使用当前字体
+    // @ts-ignore
+    const metrics = context.measureText(text);
+    return metrics.width;
+  };
+  const updateLineCount = () => {
+    // @ts-ignore
+    const textAreaElement = textAreaRef.current?.resizableTextArea?.textArea;
+    if (textAreaElement) {
+      const lineHeight = parseInt(
+        window.getComputedStyle(textAreaElement).lineHeight,
+        10
+      );
+      const currentLineCount =
+        Math.floor(textAreaElement.scrollHeight / lineHeight) || 1;
+
+      // 判断行数变化
+      if (currentLineCount > lineCount) {
+        setLineChangeStatus('行数增加');
+      } else if (currentLineCount < lineCount) {
+        setLineChangeStatus('行数减少');
+      } else {
+        setLineChangeStatus('');
+      }
+      setLineCount(currentLineCount);
+    }
+  };
+
+  useEffect(() => {
+    // @ts-ignore
+    const textAreaElement = textAreaRef.current?.resizableTextArea?.textArea;
+    if (textAreaElement) {
+      const width = calculateContentWidth(value);
+      setContentWidth(width);
+    }
+    updateLineCount();
+  }, [value]);
+  return (
+    <>
+      <div
+        className={`chat-container ${
+          lineChangeStatus && lineCount >= 2 ? '' : 'chat-input-area-dangle'
+        }`}
+      >
+        <div className="chat-left-area">1️⃣</div>
+        <div className="chat-input-area">
+          <div className="chat-input-textarea-wrapper">
+            <TextArea
+              allowClear
+              autoSize={{ minRows: 1, maxRows: 3 }}
+              onChange={handleChange}
+              ref={textAreaRef}
+              value={value}
+              rows={lineCount}
+              onKeyUp={updateLineCount}
+            />
+          </div>
+        </div>
+        <div className="chat-right-area">2️⃣</div>
+      </div>
+      <p>当前行数: {lineCount}</p>
+      {/* <p>{lineChangeStatus}</p> */}
+      {contentWidth}
+    </>
+  );
 };
 
-const Child = React.memo((props?: {
-  msg?: string
-  onClick?: () => void
-}) => {
-  const sum = useMemo(
-    () =>
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].reduce((acc, cur) => {
-        acc += cur;
-        console.info('>>> calculate sum >>>');
-        return acc;
-      }, 0),
-    [],
-  );
-  console.info('[child render]', sum)
-  return (
-    <div>
-      {props?.msg || 'child default msg value'}
-    </div>
-  )
-})
-function App() {
-  console.info('[App render]')
-  const [count, setCount] = useState(0);
-  const [msg, setMsg] = useState('hello');
-  const onChildClick = useCallback(() => {
-    console.log('test lambda function rerender too.')
-  }, [])
-  const onAppClick = () => {
-    fetch(`https://api.github.com/repos/vuejs/core/commits?per_page=3&sha=main`)
-    .then(res => res.json())
-    .then(data => {
-      console.info('>>> fetch data >>>', data)
-      flushSync(() => {
-        setCount((count) => count + 1)
-      });
-      flushSync(() => {
-        setMsg('hello world')
-      });
-    })
-  }
-  return (
-    <Profiler id="App" onRender={onRenderCallback}>
-      <div style={{
-        marginTop: '200px',
-        textAlign: 'right'
-      }}>
-        <button onClick={onAppClick}>
-          count is {count}
-        </button>
-        {msg && (
-          <Suspense fallback={<div>Loading...</div>}>
-            <Child msg={msg} onClick={onChildClick} />
-          </Suspense>
-          )}
-      </div>
-    </Profiler>
-  )
-}
-
-export default App
+export default App;
