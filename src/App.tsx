@@ -1,103 +1,116 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
-import { Input } from 'antd';
+import { Input, theme } from 'antd';
 
 const { TextArea } = Input;
 
 const App: React.FC = () => {
+  const { token } = theme.useToken();
+  const { borderRadiusLG, blue10 } = token
+
   const [value, setValue] = useState('');
-  const [lineCount, setLineCount] = useState(1);
-  const [isAboutToWrap, setIsAboutToWrap] = useState(false);
+  const [isDangle, setIsDangle] = useState(false);
+  const containerRef = useRef(null);
+  const leftRef = useRef(null);
+  const centerRef = useRef(null);
+  const rightRef = useRef(null);
   const textAreaRef = useRef(null);
-  const [lineChangeStatus, setLineChangeStatus] = useState('');
 
   const handleChange = (e: any) => setValue(e.target.value);
 
-  // useLayoutEffect(() => {
-  //   // @ts-ignore
-  //   const textAreaElement = textAreaRef.current?.resizableTextArea?.textArea;
-  //   if (textAreaElement) {
-  //     const lineHeight = parseInt(
-  //       window.getComputedStyle(textAreaElement).lineHeight,
-  //       10
-  //     );
-  //     const currentLineCount =
-  //       Math.floor(textAreaElement.scrollHeight / lineHeight) || 1;
-  //     setLineCount(currentLineCount);
-  //     const aboutToWrap = textAreaElement.scrollHeight > textAreaElement.clientHeight;
-  //     setIsAboutToWrap(aboutToWrap);
-  //   }
-  // }, [value]);
-  const [contentWidth, setContentWidth] = useState(0);
-  const calculateContentWidth = (text: any) => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    // @ts-ignore
-    context.font = window.getComputedStyle(textAreaRef.current).font; // 使用当前字体
-    // @ts-ignore
-    const metrics = context.measureText(text);
-    return metrics.width;
-  };
   const updateLineCount = () => {
     // @ts-ignore
     const textAreaElement = textAreaRef.current?.resizableTextArea?.textArea;
-    if (textAreaElement) {
-      const lineHeight = parseInt(
-        window.getComputedStyle(textAreaElement).lineHeight,
-        10
-      );
-      const currentLineCount =
-        Math.floor(textAreaElement.scrollHeight / lineHeight) || 1;
+    if (
+      textAreaElement &&
+      containerRef?.current &&
+      leftRef?.current &&
+      rightRef.current
+    ) {
+      const textAreaRect = window.getComputedStyle(textAreaElement);
+      const textLPadd = Number(textAreaRect.paddingLeft.slice(0, -2));
+      const textRpadd = Number(textAreaRect.paddingRight.slice(0, -2));
 
-      // 判断行数变化
-      if (currentLineCount > lineCount) {
-        setLineChangeStatus('行数增加');
-      } else if (currentLineCount < lineCount) {
-        setLineChangeStatus('行数减少');
+      // @ts-ignore
+      const containerWidth = containerRef.current.clientWidth;
+      // @ts-ignore
+      const leftWidth = leftRef.current.clientWidth;
+      // @ts-ignore
+      const rightWidth = rightRef.current.clientWidth;
+      const centerWidth = containerWidth - leftWidth - rightWidth;
+
+      const textAreaContentRect = getTextareaContentWidth(textAreaElement);
+
+      if (
+        // textarea的内容宽度
+        textAreaContentRect.width +
+          // textarea的padding间距
+          textLPadd +
+          textRpadd +
+          // container的gap间距
+          10 * 2 >=
+        centerWidth
+      ) {
+        setIsDangle(true);
       } else {
-        setLineChangeStatus('');
+        setIsDangle(false);
       }
-      setLineCount(currentLineCount);
     }
   };
 
   useEffect(() => {
-    // @ts-ignore
-    const textAreaElement = textAreaRef.current?.resizableTextArea?.textArea;
-    if (textAreaElement) {
-      const width = calculateContentWidth(value);
-      setContentWidth(width);
-    }
     updateLineCount();
   }, [value]);
   return (
     <>
       <div
-        className={`chat-container ${
-          lineChangeStatus && lineCount >= 2 ? '' : 'chat-input-area-dangle'
-        }`}
+        className={`chat-container ${isDangle ? '' : 'chat-input-area-dangle'}`}
+        ref={containerRef}
+        style={{
+          borderColor: blue10,
+          borderRadius: `${borderRadiusLG}px`
+        }}
       >
-        <div className="chat-left-area">1️⃣</div>
-        <div className="chat-input-area">
+        <div ref={leftRef} className="chat-left-area">
+          1️⃣
+        </div>
+        <div ref={centerRef} className="chat-input-area">
           <div className="chat-input-textarea-wrapper">
             <TextArea
-              allowClear
               autoSize={{ minRows: 1, maxRows: 3 }}
               onChange={handleChange}
               ref={textAreaRef}
               value={value}
-              rows={lineCount}
               onKeyUp={updateLineCount}
+              variant="borderless"
+              placeholder='发消息、输入 @ 或 / 选择技能'
             />
           </div>
         </div>
-        <div className="chat-right-area">2️⃣</div>
+        <div ref={rightRef} className="chat-right-area">
+          2️⃣2️⃣
+        </div>
       </div>
-      <p>当前行数: {lineCount}</p>
-      {/* <p>{lineChangeStatus}</p> */}
-      {contentWidth}
     </>
   );
 };
 
 export default App;
+
+function getTextareaContentWidth(textarea: any) {
+  const text = textarea.value;
+  const div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.visibility = 'hidden';
+  div.style.whiteSpace = 'pre-wrap';
+  div.style.font = getComputedStyle(textarea).font;
+  div.style.padding = getComputedStyle(textarea).padding;
+  div.style.border = getComputedStyle(textarea).border;
+  div.style.lineHeight = getComputedStyle(textarea).lineHeight;
+  div.style.letterSpacing = getComputedStyle(textarea).letterSpacing;
+  div.textContent = text;
+  document.body.appendChild(div);
+  const rect = div.getBoundingClientRect();
+  document.body.removeChild(div);
+  return rect;
+}
