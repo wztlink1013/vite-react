@@ -1,74 +1,89 @@
-import React, { Profiler, Suspense, useCallback, useMemo, useState } from 'react'
-import { flushSync } from 'react-dom';
+import { EditorContent, FloatingMenu, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import React, { useEffect } from 'react';
+import './tiptap.scss';
 
-const onRenderCallback = (
-  id: string,
-  phase: string,
-  actualDuration: number,
-  baseDuration: number,
-  startTime: number,
-  commitTime: number,
-) => {
-  console.log({ id, phase, actualDuration, baseDuration, startTime, commitTime });
-};
 
-const Child = React.memo((props?: {
-  msg?: string
-  onClick?: () => void
-}) => {
-  const sum = useMemo(
-    () =>
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].reduce((acc, cur) => {
-        acc += cur;
-        console.info('>>> calculate sum >>>');
-        return acc;
-      }, 0),
-    [],
-  );
-  console.info('[child render]', sum)
-  return (
-    <div>
-      {props?.msg || 'child default msg value'}
-    </div>
-  )
-})
-function App() {
-  console.info('[App render]')
-  const [count, setCount] = useState(0);
-  const [msg, setMsg] = useState('hello');
-  const onChildClick = useCallback(() => {
-    console.log('test lambda function rerender too.')
-  }, [])
-  const onAppClick = () => {
-    fetch(`https://api.github.com/repos/vuejs/core/commits?per_page=3&sha=main`)
-    .then(res => res.json())
-    .then(data => {
-      console.info('>>> fetch data >>>', data)
-      flushSync(() => {
-        setCount((count) => count + 1)
-      });
-      flushSync(() => {
-        setMsg('hello world')
-      });
-    })
-  }
-  return (
-    <Profiler id="App" onRender={onRenderCallback}>
-      <div style={{
-        marginTop: '200px',
-        textAlign: 'right'
-      }}>
-        <button onClick={onAppClick}>
-          count is {count}
-        </button>
-        {msg && (
-          <Suspense fallback={<div>Loading...</div>}>
-            <Child msg={msg} onClick={onChildClick} />
-          </Suspense>
-          )}
-      </div>
-    </Profiler>
-  )
+/**
+ * 计算两个字符串表示的数字的和
+ * @param a {string} 表示第一个加数的字符串
+ * @param b {string} 表示第二个加数的字符串
+ * @returns {number} 两个加数的和
+ */
+export const getSum = (a: string, b: string): number => {
+  return parseInt(a) + parseInt(b);
 }
 
-export default App
+export default () => {
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: `
+      <p>
+        This is an example of a Medium-like editor. Enter a new line and some buttons will appear.
+      </p>
+      <p></p>
+    `,
+  });
+
+  const [isEditable, setIsEditable] = React.useState(true);
+
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(isEditable);
+    }
+  }, [isEditable, editor]);
+
+  return (
+    <>
+      <div className="control-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={isEditable}
+            onChange={() => setIsEditable(!isEditable)}
+          />
+          Editable
+        </label>
+      </div>
+      {editor && (
+        <FloatingMenu
+          editor={editor}
+          tippyOptions={{ duration: 100, offset: [0, -72] }}
+          shouldShow={(props) => {
+            return true
+          }}
+        >
+          <div className="floating-menu">
+            <button
+              onClick={() =>
+                editor.chain().focus().setHeading({ level: 1 }).run()
+              }
+              className={
+                editor.isActive('heading', { level: 1 }) ? 'is-active' : ''
+              }
+            >
+              H1
+            </button>
+            <button
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 2 }).run()
+              }
+              className={
+                editor.isActive('heading', { level: 2 }) ? 'is-active' : ''
+              }
+            >
+              H2
+            </button>
+            {/* <button
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              className={editor.isActive('bulletList') ? 'is-active' : ''}
+            >
+              Bullet list
+            </button> */}
+          </div>
+        </FloatingMenu>
+      )}
+      <EditorContent editor={editor} />
+    </>
+  );
+};
