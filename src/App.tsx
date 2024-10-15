@@ -1,8 +1,12 @@
-import { EditorContent, FloatingMenu, useEditor } from '@tiptap/react';
+import { EditorContent, 
+  // FloatingMenu, 
+  useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import React, { useEffect } from 'react';
 import './tiptap.scss';
 
+import GlobalDragHandle from './tiptap-extension-global-drag-handle';
+import AutoJoiner from 'tiptap-extension-auto-joiner';
 
 /**
  * 计算两个字符串表示的数字的和
@@ -12,15 +16,30 @@ import './tiptap.scss';
  */
 export const getSum = (a: string, b: string): number => {
   return parseInt(a) + parseInt(b);
-}
+};
 
 export default () => {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      GlobalDragHandle.configure({
+        // dragHandleWidth: 20, // default
+
+        // // The scrollTreshold specifies how close the user must drag an element to the edge of the lower/upper screen for automatic
+        // // scrolling to take place. For example, scrollTreshold = 100 means that scrolling starts automatically when the user drags an
+        // // element to a position that is max. 99px away from the edge of the screen
+        // // You can set this to 0 to prevent auto scrolling caused by this extension
+        // scrollTreshold: 100, // default
+      }),
+      AutoJoiner.configure({
+        // elementsToJoin: ['bulletList', 'orderedList'], // default
+      }),
+    ],
     content: `
       <p>
         This is an example of a Medium-like editor. Enter a new line and some buttons will appear.
       </p>
+      <p></p>
       <p></p>
     `,
   });
@@ -45,7 +64,7 @@ export default () => {
           Editable
         </label>
       </div>
-      {editor && (
+      {/* {editor && (
         <FloatingMenu
           editor={editor}
           tippyOptions={{ duration: 100, offset: [0, -72] }}
@@ -74,15 +93,9 @@ export default () => {
             >
               H2
             </button>
-            {/* <button
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
-              className={editor.isActive('bulletList') ? 'is-active' : ''}
-            >
-              Bullet list
-            </button> */}
           </div>
         </FloatingMenu>
-      )}
+      )} */}
       <EditorContent editor={editor} />
     </>
   );
