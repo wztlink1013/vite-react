@@ -11,7 +11,7 @@ import { Fragment, Slice, Node } from '@tiptap/pm/model';
 // @ts-ignore
 import { __serializeForClipboard, EditorView } from '@tiptap/pm/view';
 
-import { Popover } from 'antd';
+import { Popover, Tree } from 'antd';
 import { HolderOutlined, PlusSquareOutlined } from '@ant-design/icons';
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
@@ -99,6 +99,7 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
   const pluginKey = 'globalDragHandle';
   const { editor } = props;
   const dragHandleElement = useRef<HTMLElement | null>(null);
+  const [treeData, settreeData] = useState([])
 
   const addBlockPopoverIsOpen = useRef(false);
   const onOpenChange = (open: boolean) =>
@@ -451,7 +452,9 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         text: node.textContent,
         id: Math.random().toString(36).slice(-6) // TODO: 获取当前标题的id
       }));
-      
+      const tree = buildTree(data)
+      // @ts-ignore
+      settreeData([tree])
       console.info('>>> update >>>', $headings, { editor, tr, data }, buildTree(data));
     });
     return () => {
@@ -479,6 +482,10 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
           <HolderOutlined />
         </div>
       </Popover>
+      <Tree
+
+      treeData={treeData}
+    />
     </>
   );
 };
