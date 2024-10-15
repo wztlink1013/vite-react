@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@tiptap/core';
-import { Popover } from 'antd';
+import { Button, Popover } from 'antd';
 import {
   NodeSelection,
   Plugin,
@@ -60,38 +60,37 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
   const [element, setElement] = useState<HTMLDivElement | null>(null);
   const pluginKey = 'globalDragHandle';
   const { editor } = props;
-  const domRef = useRef<HTMLElement | null>(null);
+  const dragHandleElement = useRef<HTMLElement | null>(null);
 
   function DragHandlePlugin(
     options: GlobalDragHandleOptions & { pluginKey: string }
   ) {
     let listType = '';
-    let dragHandleElement: HTMLElement | null = null;
-  
+
     function handleDragStart(event: DragEvent, view: EditorView) {
       view.focus();
-  
+
       if (!event.dataTransfer) return;
-  
+
       const node = nodeDOMAtCoords({
         x: event.clientX + 50 + options.dragHandleWidth,
         y: event.clientY,
       });
-  
+
       if (!(node instanceof Element)) return;
-  
+
       let draggedNodePos = nodePosAtDOM(node, view, options);
       if (draggedNodePos == null || draggedNodePos < 0) return;
       draggedNodePos = calcNodePos(draggedNodePos, view);
-  
+
       const { from, to } = view.state.selection;
       const diff = from - to;
-  
+
       const fromSelectionPos = calcNodePos(from, view);
       let differentNodeSelected = false;
-  
+
       const nodePos = view.state.doc.resolve(fromSelectionPos);
-  
+
       // Check if nodePos points to the top level node
       if (nodePos.node().type.name === 'doc') differentNodeSelected = true;
       else {
@@ -99,7 +98,7 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
           view.state.doc,
           nodePos.before()
         );
-  
+
         // Check if the node where the drag event started is part of the current selection
         differentNodeSelected = !(
           draggedNodePos + 1 >= nodeSelection.$from.pos &&
@@ -120,7 +119,7 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         );
       } else {
         selection = NodeSelection.create(view.state.doc, draggedNodePos);
-  
+
         // if inline node is selected, e.g mention -> go to the parent node to select the whole node
         // if table row is selected, go to the parent node to select the whole node
         if (
@@ -132,7 +131,7 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         }
       }
       view.dispatch(view.state.tr.setSelection(selection));
-  
+
       // If the selected node is a list item, we need to save the type of the wrapping list e.g. OL or UL
       if (
         view.state.selection instanceof NodeSelection &&
@@ -140,27 +139,28 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
       ) {
         listType = node.parentElement!.tagName;
       }
-  
+
       const slice = view.state.selection.content();
       const { dom, text } = __serializeForClipboard(view, slice);
-  
+
       event.dataTransfer.clearData();
       event.dataTransfer.setData('text/html', dom.innerHTML);
       event.dataTransfer.setData('text/plain', text);
       event.dataTransfer.effectAllowed = 'copyMove';
-  
+
       event.dataTransfer.setDragImage(node, 0, 0);
-  
+
       view.dragging = { slice, move: event.ctrlKey };
     }
     function hideDragHandle() {
-      if (dragHandleElement) {
-        dragHandleElement.classList.add('hide');
+      if (dragHandleElement.current) {
+        dragHandleElement.current.classList.add('hide');
+        console.info('>>> hide >>>');
       }
     }
     function showDragHandle() {
-      if (dragHandleElement) {
-        dragHandleElement.classList.remove('hide');
+      if (dragHandleElement.current) {
+        dragHandleElement.current.classList.remove('hide');
       }
     }
     function hideHandleOnEditorOut(event: MouseEvent) {
@@ -178,11 +178,17 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         const handleBySelector = options.dragHandleSelector
           ? document.querySelector<HTMLElement>(options.dragHandleSelector)
           : null;
-        dragHandleElement = handleBySelector ?? document.createElement('div');
-        dragHandleElement.draggable = true;
-        dragHandleElement.dataset.dragHandle = '';
-        dragHandleElement.classList.add('drag-handle');
-  
+        console.info(
+          '>>> [plugin view] handleBySelector >>>',
+          options.dragHandleSelector,
+          handleBySelector
+        );
+        dragHandleElement.current =
+          handleBySelector ?? document.createElement('div');
+        dragHandleElement.current.draggable = true;
+        dragHandleElement.current.dataset.dragHandle = '';
+        dragHandleElement.current.classList.add('drag-handle');
+
         function onClickHandle(e: any) {
           options?.onClickBlock?.({
             view,
@@ -202,33 +208,42 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
             window.scrollTo({ top: scrollY + 30, behavior: 'smooth' });
           }
         }
-  
-        dragHandleElement.addEventListener('click', onClickHandle);
-        dragHandleElement.addEventListener('dragstart', onDragHandleDragStart);
-        dragHandleElement.addEventListener('drag', onDragHandleDrag);
-  
+
+        dragHandleElement.current.addEventListener('click', onClickHandle);
+        dragHandleElement.current.addEventListener(
+          'dragstart',
+          onDragHandleDragStart
+        );
+        dragHandleElement.current.addEventListener('drag', onDragHandleDrag);
+
         hideDragHandle();
-  
+
         if (!handleBySelector) {
-          view?.dom?.parentElement?.appendChild(dragHandleElement);
+          view?.dom?.parentElement?.appendChild(dragHandleElement.current);
         }
         view?.dom?.parentElement?.addEventListener(
           'mouseout',
           hideHandleOnEditorOut
         );
-  
+
         return {
           destroy: () => {
             if (!handleBySelector) {
-              dragHandleElement?.remove?.();
+              dragHandleElement.current?.remove?.();
             }
-            dragHandleElement?.removeEventListener('click', onClickHandle);
-            dragHandleElement?.removeEventListener('drag', onDragHandleDrag);
-            dragHandleElement?.removeEventListener(
+            dragHandleElement.current?.removeEventListener(
+              'click',
+              onClickHandle
+            );
+            dragHandleElement.current?.removeEventListener(
+              'drag',
+              onDragHandleDrag
+            );
+            dragHandleElement.current?.removeEventListener(
               'dragstart',
               onDragHandleDragStart
             );
-            dragHandleElement = null;
+            dragHandleElement.current = null;
             view?.dom?.parentElement?.removeEventListener(
               'mouseout',
               hideHandleOnEditorOut
@@ -241,20 +256,20 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
           // TODO: 节流
           mousemove: (view, event) => {
             if (!view.editable) return;
-  
+
             // 计算出了一级DOM
             const node = nodeDOMAtCoords({
               x: event.clientX + 50 + options.dragHandleWidth,
               y: event.clientY,
             });
-  
+
             // console.info('>>> node >>>', node)
             /**
              * TODO:
              * 计算可能还是不准确，只计算了往右偏移50的像素，但是如果是顶级嵌套多层的话，就不准了
              * 可能还需要往上递归找到顶级节点
              */
-  
+
             if (
               // 过滤掉非元素节点
               !(node instanceof Element) ||
@@ -268,7 +283,7 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
               hideDragHandle();
               return;
             }
-  
+
             // 计算小方块定位信息
             const compStyle = window.getComputedStyle(node);
             const parsedLineHeight = parseInt(compStyle.lineHeight, 10);
@@ -276,9 +291,9 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
               ? parseInt(compStyle.fontSize) * 1.2
               : parsedLineHeight;
             const paddingTop = parseInt(compStyle.paddingTop, 10);
-  
+
             const rect = absoluteRect(node);
-  
+
             rect.top += (lineHeight - 24) / 2;
             rect.top += paddingTop;
             // Li markers
@@ -286,11 +301,13 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
               rect.left -= options.dragHandleWidth;
             }
             rect.width = options.dragHandleWidth;
-  
-            if (!dragHandleElement) return;
-  
-            dragHandleElement.style.left = `${rect.left - rect.width}px`;
-            dragHandleElement.style.top = `${rect.top}px`;
+
+            if (!dragHandleElement.current) return;
+
+            dragHandleElement.current.style.left = `${
+              rect.left - rect.width
+            }px`;
+            dragHandleElement.current.style.top = `${rect.top}px`;
             showDragHandle();
           },
           keydown: () => {
@@ -311,19 +328,19 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
               left: event.clientX,
               top: event.clientY,
             });
-  
+
             if (!dropPos) return;
-  
+
             if (view.state.selection instanceof NodeSelection) {
               droppedNode = view.state.selection.node;
             }
             if (!droppedNode) return;
-  
+
             const resolvedPos = view.state.doc.resolve(dropPos.pos);
-  
+
             const isDroppedInsideList =
               resolvedPos.parent.type.name === 'listItem';
-  
+
             // If the selected node is a list item and is not dropped inside a list, we need to wrap it inside <ol> tag otherwise ol list items will be transformed into ul list item when dropped
             if (
               view.state.selection instanceof NodeSelection &&
@@ -331,10 +348,11 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
               !isDroppedInsideList &&
               listType == 'OL'
             ) {
-              const newList = view.state.schema.nodes.orderedList?.createAndFill(
-                null,
-                droppedNode
-              );
+              const newList =
+                view.state.schema.nodes.orderedList?.createAndFill(
+                  null,
+                  droppedNode
+                );
               const slice = new Slice(Fragment.from(newList), 0, 0);
               view.dragging = { slice, move: event.ctrlKey };
             }
@@ -358,6 +376,7 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         dragHandleWidth: 20,
         scrollTreshold: 100,
         excludedTags: [],
+        dragHandleSelector: '.drag-handle',
         onClickBlock: ({ view, e, options }) => {
           // TODO: 动态改变plusBlock内容的动态图标
           // const node = nodeDOMAtCoords({
@@ -368,7 +387,7 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
             left: e.clientX + 50 + options.dragHandleWidth,
             top: e.clientY,
           })!.pos;
-          console.info('>>> [🟦] onClickHandle >>>', view, domRef.current);
+          console.info('>>> [🟦] onClickHandle >>>', view);
           editor
             .chain()
             .setTextSelection({ from: nodePos, to: nodePos })
@@ -391,12 +410,14 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         style={{ visibility: 'hidden' }}
       />
       <Popover
-        content={<div>这是Popover的内容</div>}
-        title="Popover Title"
+        placement="leftTop"
+        content={'666'}
+        title="Title"
         trigger="click"
-        getPopupContainer={() => domRef.current || document.body}
+        showArrow={false}
       >
-        {/* {domRef.current || <>+</>} */}+
+        {/* @ts-ignore */}
+        <div ref={dragHandleElement} className="drag-handle" />
       </Popover>
     </>
   );
