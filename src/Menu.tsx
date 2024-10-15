@@ -58,6 +58,42 @@ interface GlobalDragHandleOptions {
   }) => void;
 }
 
+// @ts-ignore
+function buildTree(data, title = '标题', key = 'doc-slug') {
+  const root = {
+      title,
+      key,
+      level: 0,
+      children: [],
+  };
+
+  const stack = [root]; // 初始化根节点作为栈的初始元素
+
+  // @ts-ignore
+  data.forEach((item) => {
+      const node = {
+          title: item.text,
+          key: item.id,
+          level: item.level,
+          children: [],
+      };
+
+      // 找到当前节点的父节点
+      while (stack.length > 0 && stack[stack.length - 1].level >= item.level) {
+          stack.pop(); // 弹出栈顶元素，直到找到比当前节点level小的元素作为父节点
+      }
+
+      // 将当前节点作为其父节点的子节点
+      // @ts-ignore
+      stack[stack.length - 1].children.push(node);
+
+      // 将当前节点入栈，等待处理它的子节点
+      stack.push(node);
+  });
+
+  return root;
+}
+
 export const FloatingMenu = (props: FloatingMenuProps) => {
   const [element, setElement] = useState<HTMLDivElement | null>(null);
   const pluginKey = 'globalDragHandle';
@@ -410,7 +446,13 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
     console.info('editor', editor);
     editor.on('update', ({ editor, transaction: tr }) => {
       const $headings = editor.$nodes('heading');
-      console.info('>>> update >>>', $headings, { editor, tr });
+      const data = $headings!.map((node) => ({
+        level: node.attributes.level,
+        text: node.textContent,
+        id: Math.random().toString(36).slice(-6) // TODO: 获取当前标题的id
+      }));
+      
+      console.info('>>> update >>>', $headings, { editor, tr, data }, buildTree(data));
     });
     return () => {
       editor.unregisterPlugin(pluginKey);

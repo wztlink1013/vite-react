@@ -31,8 +31,22 @@ export default () => {
       <p>
         This is an example of a Medium-like editor. Enter a new line and some buttons will appear.
       </p>
+      <h3 id="666">asdfa</h3>
       <p></p>
       <p></p>
+      <h4>asdfasfdf</h4>
+      <h3>rqwerqwrw</h3>
+      <h1>rqwerqwrw</h1>
+      <h3>asdfa</h3>
+      <p></p>
+      <p></p>
+      <h4>asdfasfdf</h4>
+      <h3>rqwerqwrw</h3>
+            <h3>asdfa</h3>
+      <p></p>
+      <p></p>
+      <h4>asdfasfdf</h4>
+      <h3>rqwerqwrw</h3>
     `,
   });
 
