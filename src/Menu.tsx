@@ -407,6 +407,11 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         },
       })
     );
+    console.info('editor', editor);
+    editor.on('update', ({ editor, transaction: tr }) => {
+      const $headings = editor.$nodes('heading');
+      console.info('>>> update >>>', $headings, { editor, tr });
+    });
     return () => {
       editor.unregisterPlugin(pluginKey);
     };
