@@ -5,8 +5,9 @@ import StarterKit from '@tiptap/starter-kit';
 import React, { useEffect } from 'react';
 import './tiptap.scss';
 
-import GlobalDragHandle from './tiptap-extension-global-drag-handle';
+// import GlobalDragHandle from './tiptap-extension-global-drag-handle';
 import AutoJoiner from 'tiptap-extension-auto-joiner';
+import { FloatingMenu } from './Menu';
 
 /**
  * 计算两个字符串表示的数字的和
@@ -22,18 +23,9 @@ export default () => {
   const editor = useEditor({
     extensions: [
       StarterKit,
-      GlobalDragHandle.configure({
-        // dragHandleWidth: 20, // default
-
-        // // The scrollTreshold specifies how close the user must drag an element to the edge of the lower/upper screen for automatic
-        // // scrolling to take place. For example, scrollTreshold = 100 means that scrolling starts automatically when the user drags an
-        // // element to a position that is max. 99px away from the edge of the screen
-        // // You can set this to 0 to prevent auto scrolling caused by this extension
-        // scrollTreshold: 100, // default
-      }),
-      AutoJoiner.configure({
-        // elementsToJoin: ['bulletList', 'orderedList'], // default
-      }),
+      // AutoJoiner.configure({
+      //   // elementsToJoin: ['bulletList', 'orderedList'], // default
+      // }),
     ],
     content: `
       <p>
@@ -54,7 +46,7 @@ export default () => {
 
   return (
     <>
-      <div className="control-group">
+      {/* <div className="control-group">
         <label>
           <input
             type="checkbox"
@@ -63,7 +55,7 @@ export default () => {
           />
           Editable
         </label>
-      </div>
+      </div> */}
       {/* {editor && (
         <FloatingMenu
           editor={editor}
@@ -97,6 +89,7 @@ export default () => {
         </FloatingMenu>
       )} */}
       <EditorContent editor={editor} />
+      <FloatingMenu editor={editor!}/>
     </>
   );
 };

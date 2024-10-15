@@ -10,7 +10,7 @@ import { Fragment, Slice, Node } from '@tiptap/pm/model';
 // @ts-ignore
 import { __serializeForClipboard, EditorView } from '@tiptap/pm/view';
 
-export interface GlobalDragHandleOptions {
+interface GlobalDragHandleOptions {
   /**
    * The width of the drag handle
    */
@@ -31,6 +31,18 @@ export interface GlobalDragHandleOptions {
    * Tags to be excluded for drag handle
    */
   excludedTags: string[];
+
+  onClickBlock?: ({ 
+    view, 
+    e,
+    options,
+    dragHandleElement, 
+  }: { 
+    view: EditorView; 
+    e: any; // 点击事件
+    options: GlobalDragHandleOptions ;
+    dragHandleElement: HTMLElement | null, 
+  }) => void;
 }
 function absoluteRect(node: Element) {
   const data = node.getBoundingClientRect();
@@ -52,7 +64,7 @@ function absoluteRect(node: Element) {
   };
 }
 
-function nodeDOMAtCoords(coords: { x: number; y: number }) {
+export function nodeDOMAtCoords(coords: { x: number; y: number }) {
   return document
     .elementsFromPoint(coords.x, coords.y)
     .find(
@@ -214,12 +226,17 @@ export function DragHandlePlugin(
       dragHandleElement.dataset.dragHandle = '';
       dragHandleElement.classList.add('drag-handle');
 
+      function onClickHandle(e: any) {
+        options?.onClickBlock?.({
+          view,
+          e,
+          options,
+          dragHandleElement,
+        })
+      }
       function onDragHandleDragStart(e: DragEvent) {
         handleDragStart(e, view);
       }
-
-      dragHandleElement.addEventListener('dragstart', onDragHandleDragStart);
-
       function onDragHandleDrag(e: DragEvent) {
         hideDragHandle();
         let scrollY = window.scrollY;
@@ -230,6 +247,8 @@ export function DragHandlePlugin(
         }
       }
 
+      dragHandleElement.addEventListener('click', onClickHandle)
+      dragHandleElement.addEventListener('dragstart', onDragHandleDragStart);
       dragHandleElement.addEventListener('drag', onDragHandleDrag);
 
       hideDragHandle();
@@ -247,6 +266,7 @@ export function DragHandlePlugin(
           if (!handleBySelector) {
             dragHandleElement?.remove?.();
           }
+          dragHandleElement?.removeEventListener('click', onClickHandle)
           dragHandleElement?.removeEventListener('drag', onDragHandleDrag);
           dragHandleElement?.removeEventListener(
             'dragstart',
@@ -262,30 +282,38 @@ export function DragHandlePlugin(
     },
     props: {
       handleDOMEvents: {
+        // TODO: 节流
         mousemove: (view, event) => {
-          if (!view.editable) {
-            return;
-          }
+          if (!view.editable) return;
 
+          // 计算出了一级DOM
           const node = nodeDOMAtCoords({
             x: event.clientX + 50 + options.dragHandleWidth,
             y: event.clientY,
           });
 
-          const notDragging = node?.closest('.not-draggable');
-          const excludedTagList = options.excludedTags
-            .concat(['ol', 'ul'])
-            .join(', ');
+          // console.info('>>> node >>>', node)
+          /**
+           * TODO: 
+           * 计算可能还是不准确，只计算了往右偏移50的像素，但是如果是顶级嵌套多层的话，就不准了
+           * 可能还需要往上递归找到顶级节点
+           */
 
           if (
+            // 过滤掉非元素节点
             !(node instanceof Element) ||
-            node.matches(excludedTagList) ||
-            notDragging
+            // 过滤掉指定标签拖拽元素
+            node.matches(
+              options.excludedTags.concat(['ol', 'ul']).join(', ')
+            ) ||
+            // 过滤掉指定类的拖拽元素
+            node?.closest('.not-draggable')
           ) {
             hideDragHandle();
             return;
           }
 
+          // 计算小方块定位信息
           const compStyle = window.getComputedStyle(node);
           const parsedLineHeight = parseInt(compStyle.lineHeight, 10);
           const lineHeight = isNaN(parsedLineHeight)
