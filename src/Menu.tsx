@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+
 import { Editor } from '@tiptap/core';
-import { Button, Popover } from 'antd';
 import {
   NodeSelection,
   Plugin,
@@ -8,9 +8,11 @@ import {
   TextSelection,
 } from '@tiptap/pm/state';
 import { Fragment, Slice, Node } from '@tiptap/pm/model';
-
 // @ts-ignore
 import { __serializeForClipboard, EditorView } from '@tiptap/pm/view';
+
+import { Popover } from 'antd';
+import { HolderOutlined, PlusSquareOutlined } from '@ant-design/icons';
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 
@@ -61,6 +63,10 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
   const pluginKey = 'globalDragHandle';
   const { editor } = props;
   const dragHandleElement = useRef<HTMLElement | null>(null);
+
+  const addBlockPopoverIsOpen = useRef(false);
+  const onOpenChange = (open: boolean) =>
+    (addBlockPopoverIsOpen.current = open);
 
   function DragHandlePlugin(
     options: GlobalDragHandleOptions & { pluginKey: string }
@@ -153,9 +159,10 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
       view.dragging = { slice, move: event.ctrlKey };
     }
     function hideDragHandle() {
+      // 弹框显示情况下 不能隐藏
+      if (addBlockPopoverIsOpen.current) return;
       if (dragHandleElement.current) {
         dragHandleElement.current.classList.add('hide');
-        console.info('>>> hide >>>');
       }
     }
     function showDragHandle() {
@@ -178,11 +185,7 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         const handleBySelector = options.dragHandleSelector
           ? document.querySelector<HTMLElement>(options.dragHandleSelector)
           : null;
-        console.info(
-          '>>> [plugin view] handleBySelector >>>',
-          options.dragHandleSelector,
-          handleBySelector
-        );
+
         dragHandleElement.current =
           handleBySelector ?? document.createElement('div');
         dragHandleElement.current.draggable = true;
@@ -253,9 +256,10 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
       },
       props: {
         handleDOMEvents: {
-          // TODO: 节流
           mousemove: (view, event) => {
             if (!view.editable) return;
+            // 弹框显示情况下 不更新popover
+            if (addBlockPopoverIsOpen.current) return;
 
             // 计算出了一级DOM
             const node = nodeDOMAtCoords({
@@ -263,7 +267,6 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
               y: event.clientY,
             });
 
-            // console.info('>>> node >>>', node)
             /**
              * TODO:
              * 计算可能还是不准确，只计算了往右偏移50的像素，但是如果是顶级嵌套多层的话，就不准了
@@ -378,8 +381,14 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         excludedTags: [],
         dragHandleSelector: '.drag-handle',
         onClickBlock: ({ view, e, options }) => {
-          // TODO: 动态改变plusBlock内容的动态图标
-          // const node = nodeDOMAtCoords({
+          // TODO: 动态改变plusBlock内容的动态图标 得通过静态innHTML来修改图标内容 不能用react更新渲染逻辑
+          const firstGradeNode = view.state.selection.$anchor.node(1);
+          const isPlusStateFlag =
+            firstGradeNode.type.name === 'paragraph' &&
+            // firstGradeNode.nodeSize === 2 &&
+            firstGradeNode.textContent === '' &&
+            firstGradeNode.childCount === 0;
+          // const nodeDOM = nodeDOMAtCoords({
           //   x: e.clientX + 50 + options.dragHandleWidth,
           //   y: e.clientY,
           // });
@@ -387,7 +396,8 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
             left: e.clientX + 50 + options.dragHandleWidth,
             top: e.clientY,
           })!.pos;
-          console.info('>>> [🟦] onClickHandle >>>', view);
+
+          console.info('>>> [🟦] onClickHandle >>>', { isPlusStateFlag, view });
           editor
             .chain()
             .setTextSelection({ from: nodePos, to: nodePos })
@@ -414,10 +424,13 @@ export const FloatingMenu = (props: FloatingMenuProps) => {
         content={'666'}
         title="Title"
         trigger="click"
-        showArrow={false}
+        arrow={false}
+        onOpenChange={onOpenChange}
       >
         {/* @ts-ignore */}
-        <div ref={dragHandleElement} className="drag-handle" />
+        <div ref={dragHandleElement} className="drag-handle">
+          <HolderOutlined />
+        </div>
       </Popover>
     </>
   );
