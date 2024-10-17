@@ -43,9 +43,7 @@ const Child = React.memo((props?: { msg?: string; onClick?: () => void }) => {
   return (
     <div className="border border-cyan-500 flex justify-between">
       <div>Child Component: </div>
-      <div>
-      {props?.msg || 'child default msg value'}
-      </div>
+      <div>{props?.msg || 'child default msg value'}</div>
     </div>
   );
 });
