@@ -1,4 +1,14 @@
-// `app/dashboard/page.tsx` is the UI for the `/dashboard` URL
+'use client';
+
+import ColorPickerDemo from '@/components/Color';
+
 export default function Page() {
-  return <h1>Hello, Dashboard Page!</h1>
+  return (
+    <div className="border border-emerald-200">
+      <div className="text-emerald-200">dashboard index page</div>
+      <div>
+        components folder component: <ColorPickerDemo />
+      </div>
+    </div>
+  );
 }
