@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} p-2 border border-solid border-cyan-200 rounded`}>
-        layout page
+        layout page(all page show)
         {children}
       </body>
     </html>
