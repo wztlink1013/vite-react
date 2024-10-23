@@ -12,8 +12,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  authleft,
+  authright,
 }: {
   children: React.ReactNode;
+  authleft: React.ReactNode;
+  authright: React.ReactNode;
 }) {
   console.info('>>> root layout renderer >>>');
   return (
@@ -21,7 +25,9 @@ export default function RootLayout({
       <body
         className={`${inter.className} p-2 border border-solid border-cyan-200 rounded`}
       >
-        <div className="text-cyan-200">layout page(all page show)</div>
+        <div className="text-cyan-200">root layout page(all page show)</div>
+        {authleft}
+        {authright}
         <NavLinks />
         {children}
       </body>
