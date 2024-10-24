@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { NavLinks } from '@/components/NavLinks';
+import { ReduxProvider } from '@/store';
+
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,11 +27,15 @@ export default function RootLayout({
       <body
         className={`${inter.className} p-2 border border-solid border-cyan-200 rounded`}
       >
-        <div className="text-cyan-200">root layout page(all page show)</div>
-        {authleft}
-        {authright}
-        <NavLinks />
-        {children}
+        <ReduxProvider>
+          <div>
+            <div className="text-cyan-200">root layout page(all page show)</div>
+            {authleft}
+            {authright}
+            <NavLinks />
+            {children}
+          </div>
+        </ReduxProvider>
       </body>
     </html>
   );
